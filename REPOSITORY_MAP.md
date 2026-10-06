@@ -35,7 +35,7 @@ Start here before creating a file. This is the canonical placement guide. A dire
 
 ## Current foundation
 
-The working offline demo currently lives in `src/govai_nz/core.py`, `adapters.py`, and `demo.py`, with tests in `tests/test_gateway.py`. It remains unchanged while the module contracts are agreed. When implementing the first service/adapter, **move** its demo implementation to its canonical area and update imports and tests in the same PR. Do not copy it and create two implementations. Until that migration, run the commands in `CONTRIBUTING.md`.
+The working offline demo currently lives in `src/govai_nz/core.py`, `adapters.py`, and `demo.py`, with tests in `tests/test_gateway.py`. It is the canonical implementation while module contracts are agreed. When implementing the first service/adapter, **move** its demo implementation to its canonical area and update imports and tests in the same PR. Do not copy it and create two implementations. Until that migration, run the commands in `CONTRIBUTING.md`.
 
 Top-level `services/`, `providers/`, and `tools/` are ownership boundaries; they do not imply separate deployed microservices. Start with one application and one process. Do not add Dockerfiles, npm projects, SDK dependencies, or cloud modules just to fill directories.
 
