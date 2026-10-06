@@ -12,3 +12,11 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+var/
+node_modules/
+.next/
+coverage/
+*.tfstate*
+.terraform/
+*.tfvars
+!*.example.tfvars

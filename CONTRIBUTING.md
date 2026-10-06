@@ -2,6 +2,8 @@
 
 Humans and coding agents follow these same rules. Start with one task in `docs/STARTER_ISSUES.md`; agree scope in an issue before changing public contracts. Keep one focused PR per contract or invariant. Do not open overlapping rewrites of shared files.
 
+Use `REPOSITORY_MAP.md` before choosing a path. Read the destination directory's README. Scaffold directories reserve ownership boundaries, not independent microservices. Move existing demo code during a reviewed implementation task; do not duplicate it across `src/` and `services/` or add dependencies for empty placeholders.
+
 ## Local checks
 
 Use Python 3.12 or newer. No credentials or external model calls are required.

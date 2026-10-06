@@ -24,6 +24,8 @@ Only synthetic or explicitly public input is permitted in this demo. Caller-decl
 
 ## Build next
 
+Start with [REPOSITORY_MAP.md](REPOSITORY_MAP.md) to find where each kind of file belongs. The module directories contain placement guidance and clearly mark planned components. The complete documentation index is [docs/README.md](docs/README.md).
+
 Follow [ROADMAP.md](ROADMAP.md), in order. First agree the contracts and threat model; then implement one vertical slice before opening many parallel workstreams. The next contributor tasks and acceptance criteria are in [docs/STARTER_ISSUES.md](docs/STARTER_ISSUES.md).
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [guidance mapping](controls/GUIDANCE_MAPPING.md). `AGENTS.md` and `CLAUDE.md` point coding agents to the same canonical contribution rules. Contributors may use their own tools and token budgets; maintainers still review their work.
