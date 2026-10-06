@@ -1,0 +1,17 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Compile
+        run: python3 -m compileall -q src tests
+      - name: Tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Demo
+        run: PYTHONPATH=src python3 -m govai_nz.demo
+      - name: Whitespace
+        run: git diff-tree --check HEAD
