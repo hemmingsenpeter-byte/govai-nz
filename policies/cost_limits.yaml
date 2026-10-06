@@ -1,0 +1,7 @@
+# ILLUSTRATIVE ONLY: not loaded or enforced by the offline demo.
+# A validated loader and versioned rules contract must be implemented first.
+status: example_not_loaded
+schema_version: draft
+cost_limits:
+  live_provider_calls_enabled: false
+  maximum_live_requests: 0
