@@ -2,11 +2,13 @@
 
 ## Foundation flow
 
-Request → policy decision → audit preflight → permitted provider → outcome audit → response.
+Request → ingress validation/hash → policy decision → audit preflight → permitted provider → outcome audit → response.
 
 Denied and review-required requests produce audit events without calling a provider. Provider failures produce a generic error event; exception messages are not persisted. If audit storage fails, no response is released. The preflight must succeed before any provider call.
 
 The initial policy accepts only explicitly declared public material and blocks records labelled as containing personal information. An explicitly high-impact request needs review. This is a demonstration of ordering and enforcement, not a classifier.
+
+Ingress/hash and policy failures produce generic metadata-only failure events before any provider call. Evidence fields, policy results and model responses are checked at runtime. Evidence format, timestamp semantics and provenance verification remain future contracts. See `docs/AUDIT_MODEL.md` for schema `0.2` and legacy interpretation.
 
 ## Boundaries
 
@@ -30,4 +32,4 @@ This is application-level append-only behaviour. A SQLite file owner can edit th
 
 Authenticate caller → validate/classify input → evaluate provider, retrieval and tool permissions → retrieve allowlisted evidence → record preflight → execute permitted provider → validate evidence references/output → obtain any required authenticated review before release → record outcome → release result.
 
-Check each outbound boundary before transmission. Record metadata without copying sensitive payloads into logs. Audit failure is fail-closed for release; a provider call already made cannot be undone. Startup recovery must eventually identify preflight events without terminal outcomes.
+Check each outbound boundary before transmission. Record metadata without copying sensitive payloads into logs. Audit failure is fail-closed for release; a provider call already made cannot be undone. The SQLite adapter can report preflights without terminal outcomes; durable recovery and reconciliation remain unimplemented.

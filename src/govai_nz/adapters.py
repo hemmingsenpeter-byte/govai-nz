@@ -38,5 +38,13 @@ class SQLiteAuditStore:
     def export(self) -> list[dict]:
         return [json.loads(row[0]) for row in self.connection.execute("SELECT payload FROM events ORDER BY sequence")]
 
+    def orphaned_preflights(self) -> list[dict]:
+        """Report unresolved requests; do not infer success or retry execution."""
+        events = self.export()
+        terminal_ids = {event["request_id"] for event in events
+                        if event["phase"] in {"completed", "failed", "stopped"}}
+        return [event for event in events
+                if event["phase"] == "preflight" and event["request_id"] not in terminal_ids]
+
     def close(self) -> None:
         self.connection.close()

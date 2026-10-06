@@ -1,13 +1,9 @@
 import json
 import sqlite3
-import sys
 import unittest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from govai_nz.adapters import SQLiteAuditStore
-from govai_nz.core import Classification, Evidence, Gateway, ModelResponse, PublicOnlyPolicy, Request, digest
+from govai_nz.core import Classification, Decision, Evidence, Gateway, ModelResponse, PolicyResult, PublicOnlyPolicy, Request, digest
 
 
 class SpyProvider:
@@ -114,6 +110,108 @@ class GatewayTests(unittest.TestCase):
     def test_non_boolean_policy_flags_rejected(self):
         with self.assertRaises(ValueError):
             Request("Synthetic", Classification.PUBLIC, high_impact="false")
+
+    def test_evidence_field_types_rejected(self):
+        for invalid in (None, 42, {}, "", " "):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                Evidence(invalid, "v1", "timestamp", "hash")
+
+    def test_policy_failures_are_audited_without_payload(self):
+        class BrokenPolicy:
+            def evaluate(self, request):
+                raise RuntimeError("DO_NOT_LOG_policy_secret")
+
+        result = Gateway(self.provider, BrokenPolicy(), self.audit).run(
+            Request("DO_NOT_LOG_prompt", Classification.PUBLIC))
+        self.assertEqual(result.status, "policy_error")
+        self.assertEqual(self.provider.calls, 0)
+        event = self.audit.export()[0]
+        self.assertEqual(event["phase"], "failed")
+        self.assertIsNone(event["decision"])
+        self.assertNotIn("DO_NOT_LOG", json.dumps(event))
+
+    def test_invalid_policy_result_is_audited(self):
+        class InvalidPolicy:
+            def evaluate(self, request):
+                return object()
+
+        result = Gateway(self.provider, InvalidPolicy(), self.audit).run(
+            Request("Synthetic", Classification.PUBLIC))
+        self.assertEqual(result.status, "policy_error")
+        self.assertEqual(self.provider.calls, 0)
+        self.assertEqual(len(self.audit.export()), 1)
+
+    def test_policy_metadata_types_rejected(self):
+        for args in (("allow", "reason", "v1"), (Decision.ALLOW, 42, "v1"),
+                     (Decision.ALLOW, "reason", "")):
+            with self.subTest(args=args), self.assertRaises(ValueError):
+                PolicyResult(*args)
+
+    def test_tampered_evidence_is_audited_without_fields(self):
+        evidence = Evidence("uri", "v1", "timestamp", "hash")
+        request = Request("Synthetic", Classification.PUBLIC, evidence=(evidence,))
+        object.__setattr__(evidence, "source_uri", {"DO_NOT_LOG": object()})
+        result = self.gateway.run(request)
+        self.assertEqual(result.status, "input_error")
+        self.assertEqual(self.provider.calls, 0)
+        event = self.audit.export()[0]
+        self.assertEqual(event["evidence"], [])
+        self.assertIsNone(event["input_hash"])
+        self.assertNotIn("DO_NOT_LOG", json.dumps(event))
+
+    def test_hashing_failure_is_audited(self):
+        from unittest.mock import patch
+        with patch("govai_nz.core.digest", side_effect=ValueError("DO_NOT_LOG_hash")):
+            result = self.gateway.run(Request("Synthetic", Classification.PUBLIC))
+        self.assertEqual(result.status, "input_error")
+        self.assertEqual(self.provider.calls, 0)
+        self.assertNotIn("DO_NOT_LOG", json.dumps(self.audit.export()))
+
+    def test_early_failure_audit_error_propagates(self):
+        gateway = Gateway(self.provider, PublicOnlyPolicy(), FailingStore(1))
+        with self.assertRaises(OSError):
+            gateway.run(object())
+        self.assertEqual(self.provider.calls, 0)
+
+    def test_invalid_model_id_is_audited_as_provider_error(self):
+        class InvalidProvider(SpyProvider):
+            def generate(self, request):
+                self.calls += 1
+                response = ModelResponse("Synthetic", "valid")
+                object.__setattr__(response, "model_id", 42)
+                return response
+
+        provider = InvalidProvider()
+        result = Gateway(provider, PublicOnlyPolicy(), self.audit).run(
+            Request("Synthetic", Classification.PUBLIC))
+        self.assertEqual(result.status, "provider_error")
+        self.assertIsNone(result.text)
+        self.assertIsNone(self.audit.export()[-1]["model_id"])
+        self.assertEqual(self.audit.export()[-1]["decision"], "allow")
+
+    def test_model_response_types_rejected(self):
+        for text, model in ((42, "model"), ("text", 42), ("text", " ")):
+            with self.subTest(model=model), self.assertRaises(ValueError):
+                ModelResponse(text, model)
+
+    def test_orphaned_preflight_is_detectable_after_terminal_write_failure(self):
+        audit = self.audit
+
+        class FailTerminal:
+            def append(self, event):
+                if event.phase != "preflight":
+                    raise OSError("Synthetic unavailable audit store")
+                audit.append(event)
+
+        with self.assertRaises(OSError):
+            Gateway(self.provider, PublicOnlyPolicy(), FailTerminal()).run(
+                Request("Synthetic", Classification.PUBLIC))
+        self.assertEqual(len(audit.orphaned_preflights()), 1)
+        self.assertEqual(self.provider.calls, 1)
+
+    def test_completed_requests_are_not_orphans(self):
+        self.gateway.run(Request("Synthetic", Classification.PUBLIC))
+        self.assertEqual(self.audit.orphaned_preflights(), [])
 
     def test_sqlite_rejects_duplicate_event_id(self):
         self.gateway.run(Request("Synthetic", Classification.PUBLIC))
