@@ -5,8 +5,8 @@
 From repository root, with Python 3.12 or newer:
 
 ```bash
-python -m unittest discover -s tests -v
-PYTHONPATH=src python -m govai_nz.demo
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+PYTHONPATH=src python3 -m govai_nz.demo
 ```
 
 No API key, external model or persistent database is required. This runs a command-line demonstration; it does not start an HTTP service.
