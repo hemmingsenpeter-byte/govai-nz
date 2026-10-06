@@ -1,0 +1,10 @@
+[project]
+name = "govai-nz"
+version = "0.0.1"
+description = "Unofficial public-sector AI assurance reference foundation"
+requires-python = ">=3.12"
+license = {text = "Apache-2.0"}
+dependencies = []
+
+# Run from source using PYTHONPATH=src. Packaging is intentionally deferred
+# until versioned public contracts are agreed.
