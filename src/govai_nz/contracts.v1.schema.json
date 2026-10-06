@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:govai-nz:contracts:v1",
+  "title": "GovAI-NZ shared contracts v1",
+  "description": "Request, decision, evidence, response, and audit-event wire contracts. Audit event schema_version remains independently versioned as 0.1.",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/policyResult" },
+    { "$ref": "#/$defs/evidence" },
+    { "$ref": "#/$defs/modelResponse" },
+    { "$ref": "#/$defs/auditEvent" }
+  ],
+  "$defs": {
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid4": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "minLength": 20,
+      "maxLength": 32,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?(Z|\\+00:00)$"
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["public", "non_public"]
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "deny", "review_required"]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_uri", "version_id", "retrieved_at", "content_hash"],
+      "properties": {
+        "source_uri": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^https?://[^/@?#]+(?:[/?#]|$)"
+        },
+        "version_id": { "$ref": "#/$defs/token" },
+        "retrieved_at": { "$ref": "#/$defs/utcTimestamp" },
+        "content_hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evidenceList": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt", "classification"],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32000,
+          "pattern": "\\S"
+        },
+        "classification": { "$ref": "#/$defs/classification" },
+        "contains_personal_information": {
+          "type": "boolean",
+          "default": false
+        },
+        "high_impact": {
+          "type": "boolean",
+          "default": false
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceList",
+          "default": []
+        }
+      }
+    },
+    "policyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reason", "policy_version"],
+      "properties": {
+        "decision": { "$ref": "#/$defs/decision" },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$"
+        },
+        "policy_version": { "$ref": "#/$defs/token" }
+      }
+    },
+    "modelResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "model_id"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000000
+        },
+        "model_id": { "$ref": "#/$defs/token" }
+      }
+    },
+    "auditEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "event_id", "request_id", "timestamp", "application",
+        "application_version", "phase", "decision", "reason", "policy_version",
+        "classification", "input_hash", "evidence"
+      ],
+      "properties": {
+        "schema_version": { "const": "0.1" },
+        "event_id": { "$ref": "#/$defs/uuid4" },
+        "request_id": { "$ref": "#/$defs/uuid4" },
+        "timestamp": { "$ref": "#/$defs/utcTimestamp" },
+        "application": { "$ref": "#/$defs/token" },
+        "application_version": { "$ref": "#/$defs/token" },
+        "phase": {
+          "type": "string",
+          "enum": ["stopped", "preflight", "completed", "failed"]
+        },
+        "decision": { "$ref": "#/$defs/decision" },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$"
+        },
+        "policy_version": { "$ref": "#/$defs/token" },
+        "classification": { "$ref": "#/$defs/classification" },
+        "input_hash": { "$ref": "#/$defs/sha256" },
+        "evidence": { "$ref": "#/$defs/evidenceList" },
+        "provider_id": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$"
+            }
+          ]
+        },
+        "model_id": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/token" }
+          ]
+        },
+        "output_hash": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/sha256" }
+          ]
+        }
+      }
+    }
+  }
+}

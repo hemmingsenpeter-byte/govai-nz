@@ -24,6 +24,12 @@ Provider adapters implement the contract; vendor SDKs stay inside adapters. The 
 
 Events have UUIDs, UTC timestamps, a schema version, trace/request IDs, phase, decision reasons, input/output digests, application identity, evidence references, and the actual model identifier when a provider returns it. Input and output text are excluded. A preflight and an outcome are separate events; existing records are never updated through the public adapter API.
 
+## Wire contracts
+
+`src/govai_nz/contracts.v1.schema.json` is the JSON Schema Draft 2020-12 bundle for request, policy result, evidence, model response, and audit-event objects. The Python contract classes enforce the corresponding constraints and provide strict `from_dict`/`to_dict` methods; unknown fields and labels are rejected. Prompts are limited to 32,000 characters, model responses to 1,000,000, evidence arrays to 32 references, source URIs to 2,048 characters, and identifiers to 256 characters (128 for provider IDs and decision reasons). Timestamps require RFC 3339 UTC (`Z` or `+00:00`, up to six fractional digits); UUIDs are canonical lowercase v4; SHA-256 digests are lowercase hexadecimal.
+
+The bundle version (`v1`) is distinct from the audit event's existing `schema_version` (`0.1`), which remains unchanged. Evidence is caller-supplied metadata and these schemas do not verify a source, digest, classification, or protective marking. Review authorization/resume and the gateway `Result` envelope are not wire contracts in this bundle.
+
 This is application-level append-only behaviour. A SQLite file owner can edit the database: this is **not immutable or tamper-proof storage**. Hashes do not anonymise low-entropy personal data. Model output and evidence remain untrusted. The demo does not prove factual accuracy or reproducibility of model output.
 
 ## Future vertical slice

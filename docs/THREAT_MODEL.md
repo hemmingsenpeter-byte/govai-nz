@@ -11,5 +11,6 @@ Assets: request contents, provider credentials (future), evidence integrity, rev
 | Altered audit history | Unique event IDs, insert-only application interface | DB owner can modify records; no tamper-resistant storage |
 | Injection in evidence/model output | No live sources or live models | Requires adversarial tests and authority separation before live slice |
 | Malicious contribution/dependency | Small PRs, owner review, dependency-free runtime, pinned checkout action | Repository protections, scanners, SBOM and broader assurance are planned |
+| Malformed or extended contract payload | Versioned strict wire schemas and Python validation reject unsupported labels, fields, formats and oversized values | JSON Schema checks shape only; it does not authenticate callers, verify evidence, or authoritatively classify information |
 
 The mock adapter is a test double, not a security boundary. Never infer production readiness from passing offline tests.
